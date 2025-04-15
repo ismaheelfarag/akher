@@ -447,6 +447,28 @@ h1, h2, h3, h4 {
             gap: 20px;
             margin-top: 20px;
         }
+        /* تصميم الأزرار في قسم إدارة الطلاب */
+.students-table td {
+    display: flex;
+    flex-direction: column; /* جعل الأزرار تحت بعضها */
+    gap: 10px; /* مسافة بين الأزرار */
+    align-items: center; /* محاذاة الأزرار في المنتصف */
+}
+
+.students-table td button {
+    width: 100%; /* جعل الأزرار بعرض كامل */
+    max-width: 200px; /* تحديد عرض أقصى للأزرار */
+    padding: 10px; /* تحسين المساحة الداخلية */
+    font-size: 0.9rem; /* حجم النص */
+    border-radius: 5px; /* حواف مستديرة */
+}
+
+/* تحسين التصميم على الشاشات الصغيرة */
+@media (max-width: 768px) {
+    .students-table td button {
+        max-width: 100%; /* جعل الأزرار بعرض كامل على الشاشات الصغيرة */
+    }
+}
         .alert {
     padding: 15px;
     border-radius: 10px;
@@ -3061,6 +3083,7 @@ document.getElementById('nextSelfTestQuestionBtn').addEventListener('click', () 
     // Set active menu item
     setActiveMenuItem(menuDashboard);
 }
+
 menuManageSelfTest.addEventListener('click', (e) => {
     e.preventDefault();
     setActiveMenuItem(menuManageSelfTest);
@@ -4466,6 +4489,9 @@ function createSlideCard(slide, slideId) {
                                 <button class="btn btn-danger btn-sm" onclick="toggleStudentStatus('${student.id}', ${student.disabled || false})">
                                     ${student.disabled ? 'تفعيل' : 'تعطيل'}
                                 </button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteStudentAccount('${student.id}')">
+                                    <i class="fas fa-trash"></i> حذف الحساب
+                                </button>
                             </td>
                         </tr>
                     `;
@@ -4476,7 +4502,20 @@ function createSlideCard(slide, slideId) {
             tableBody.innerHTML = `<tr><td colspan="5">حدث خطأ: ${error.message}</td></tr>`;
         });
 }
+function deleteStudentAccount(studentId) {
+    if (!confirm('هل أنت متأكد أنك تريد حذف حساب هذا الطالب؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        return;
+    }
 
+    db.collection('users').doc(studentId).delete()
+        .then(() => {
+            alert('تم حذف حساب الطالب بنجاح!');
+            loadStudents(); // إعادة تحميل قائمة الطلاب
+        })
+        .catch(error => {
+            alert(`حدث خطأ أثناء حذف حساب الطالب: ${error.message}`);
+        });
+}
 function toggleStudentStatus(studentId, isDisabled) {
     const confirmationMessage = isDisabled
         ? 'هل تريد تفعيل حساب هذا الطالب؟'
