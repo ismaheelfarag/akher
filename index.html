@@ -2392,7 +2392,7 @@ h1, h2, h3, h4 {
                                 <!-- التغذية الراجعة تظهر هنا -->
                             </div>
                             <div class="exam-footer">
-                                <button class="btn btn-primary" id="checkAnswerBtn" style="display: none;">تحقق من الإجابة</button>
+                                <button class="btn btn-primary" id="prevSelfTestQuestionBtn" style="display: none;">السابق</button>
                                 <button class="btn btn-primary" id="nextSelfTestQuestionBtn">التالي</button>
                                 <button class="btn btn-success" id="finishSelfTestBtn" style="display: none;">إنهاء الاختبار</button>
                             </div>
@@ -3083,7 +3083,11 @@ document.getElementById('nextSelfTestQuestionBtn').addEventListener('click', () 
     // Set active menu item
     setActiveMenuItem(menuDashboard);
 }
-
+menuDashboard.addEventListener('click', (e) => {
+    e.preventDefault();
+    setActiveMenuItem(menuDashboard);
+    location.reload(); // إعادة تحميل الصفحة
+});
 menuManageSelfTest.addEventListener('click', (e) => {
     e.preventDefault();
     setActiveMenuItem(menuManageSelfTest);
