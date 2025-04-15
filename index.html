@@ -4990,162 +4990,247 @@ function loadStudentsProgress() {
 });
         // Initialize the app
         initApp();// 
-        (function() {
-    'use strict';
+       
+// منع الزر الأيمن
+document.addEventListener('contextmenu', function (e) {
+    e.preventDefault();
+    showNoticeMessage("❌ استخدام الزر الأيمن غير مسموح");
+});
 
-    // منع فتح أدوات المطور عن طريق اختصارات لوحة المفاتيح
-    document.addEventListener('keydown', function(e) {
-        // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U, F12
-        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67) || 
-            e.ctrlKey && e.keyCode === 85 || 
-            e.keyCode === 123) {
-            e.preventDefault();
-            e.returnValue = false;
-            showWarning();
-            return false;
-        }
+// دالة عرض رسالة منسدلة بسيطة (مثل toast / notice)
+function showNoticeMessage(text) {
+    // إذا كانت هناك رسالة ظاهرة بالفعل، لا تكررها
+    if (document.getElementById('notice-message')) return;
+
+    const notice = document.createElement('div');
+    notice.id = 'notice-message';
+    notice.textContent = text;
+
+    Object.assign(notice.style, {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        background: '#ff4444',
+        color: '#fff',
+        padding: '10px 20px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        fontFamily: 'Cairo, sans-serif',
+        fontSize: '1rem',
+        zIndex: 9999,
+        opacity: 0,
+        animation: 'fadeSlide 0.5s ease forwards'
     });
 
-    // اكتشاف تغيير حجم النافذة (عند فتح أدوات المطور عادةً)
-    let widthThreshold = window.outerWidth - window.innerWidth;
-    let heightThreshold = window.outerHeight - window.innerHeight;
+    document.body.appendChild(notice);
+
+    // إزالة الرسالة بعد 3 ثوانٍ
+    setTimeout(() => {
+        notice.style.animation = 'fadeOut 0.5s ease forwards';
+        setTimeout(() => notice.remove(), 500);
+    }, 3000);
+
+    // إضافة CSS للأنيميشن
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+(function() {
+    'use strict';
     
-    setInterval(function() {
-        if (window.outerWidth - window.innerWidth > widthThreshold || 
-            window.outerHeight - window.innerHeight > heightThreshold) {
-            showWarning();
-            // يمكنك إضافة إجراءات إضافية هنا مثل إعادة توجيه المستخدم
-        }
-    }, 1000);
-
-    // اكتشاف فتح وحدة التحكم (console)
-    function detectConsoleOpen() {
-        let start = Date.now();
-        console.log('Detection');
-        console.clear();
-        let end = Date.now();
-        if (end - start > 100) {
-            showWarning();
-        }
-    }
-    setInterval(detectConsoleOpen, 1000);
-
-    // اكتشاف تغيير وضع الشاشة (لأجهزة الجوال)
-    if (window.orientation !== undefined) {
-        window.addEventListener('orientationchange', function() {
-            if (Math.abs(window.orientation) === 90) {
-                showWarning();
-            }
-        });
-    }
-
-    // عرض تحذير للمستخدم
-    function showWarning() {
-        // يمكنك تخصيص رسالة التحذير كما تريد
-        document.body.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: #000;
-                color: #fff;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                flex-direction: column;
-                z-index: 999999;
-                font-family: Arial, sans-serif;
-                text-align: center;
-                padding: 20px;
-            ">
-                <h1 style="color: #ff0000;">تحذير!</h1>
-                <p style="font-size: 18px;">
-                    غير مسموح لك بفتح أدوات المطور أو فحص الكود المصدري لهذه الصفحة.
-                </p>
-                <p style="font-size: 16px;">
-                    سيتم تسجيل محاولتك هذه وقد تؤدي إلى حظر دخولك.
-                </p>
+    // إعدادات التطبيق
+    const settings = {
+        warningDuration: 10000, // مدة عرض التحذير بالميلي ثانية (10 ثواني)
+        enableConsoleDetection: true,
+        enableResizeDetection: true,
+        enableKeyboardShortcutsBlock: true,
+        enableDebuggerProtection: true,
+        warningTitle: "⚠️ تنبيه: محاولة غير مصرح بها",
+        warningMessage: "تم اكتشاف محاولة فتح أدوات المطور.<br>هذا الإجراء غير مسموح به في هذا الموقع.",
+        warningButtonText: "فهمت، سأغلق الأدوات"
+    };
+    
+    // متغيرات التتبع
+    let devToolsOpened = false;
+    let warningTimeout;
+    const threshold = 160; // الحد الأدنى لاكتشاف فتح الأدوات
+    
+    // إنشاء واجهة التحذير
+    function createWarningOverlay() {
+        const overlay = document.createElement('div');
+        overlay.id = 'devtools-warning-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            z-index: 2147483647;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+        `;
+        
+        overlay.innerHTML = `
+            <div style="max-width: 600px; padding: 30px; background: rgba(255, 0, 0, 0.1); border-radius: 10px; border: 1px solid rgba(255, 0, 0, 0.3);">
+                <h1 style="color: #ff4d4d; font-size: 2em; margin-bottom: 20px;">${settings.warningTitle}</h1>
+                <div style="font-size: 1.2em; line-height: 1.6; margin-bottom: 30px;">
+                    ${settings.warningMessage}
+                </div>
+                <button id="devtools-warning-btn" style="
+                    padding: 12px 24px;
+                    background: #ff4d4d;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 1em;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                " onmouseover="this.style.background='#ff3333'" onmouseout="this.style.background='#ff4d4d'">
+                    ${settings.warningButtonText}
+                </button>
             </div>
         `;
         
-        // منع أي تفاعل مع الصفحة
+        document.body.appendChild(overlay);
+        
+        // إضافة حدث للزر
+        document.getElementById('devtools-warning-btn').addEventListener('click', function() {
+            closeWarning();
+        });
+        
+        // إغلاق التحذير تلقائياً بعد مدة محددة
+        warningTimeout = setTimeout(closeWarning, settings.warningDuration);
+    }
+    
+    // عرض التحذير
+    function showWarning() {
+        if (devToolsOpened) return;
+        
+        devToolsOpened = true;
+        
+        // إيقاف أي مؤقت سابق
+        if (warningTimeout) clearTimeout(warningTimeout);
+        
+        // إزالة أي تحذير سابق
+        const existingOverlay = document.getElementById('devtools-warning-overlay');
+        if (existingOverlay) document.body.removeChild(existingOverlay);
+        
+        createWarningOverlay();
+        logAttempt();
+    }
+    
+    // إغلاق التحذير
+    function closeWarning() {
+        const overlay = document.getElementById('devtools-warning-overlay');
+        if (overlay) {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                document.body.removeChild(overlay);
+                devToolsOpened = false;
+            }, 300);
+        }
+    }
+    
+    // تسجيل المحاولة
+    function logAttempt() {
+        const data = {
+            timestamp: new Date(),
+            url: window.location.href,
+            userAgent: navigator.userAgent
+        };
+        
+        // يمكنك هنا إضافة كود إرسال البيانات إلى السيرفر
+        console.warn('DevTools access attempt:', data);
+    }
+    
+    // 1. منع اختصارات لوحة المفاتيح
+    if (settings.enableKeyboardShortcutsBlock) {
         document.addEventListener('keydown', function(e) {
-            e.preventDefault();
-            e.returnValue = false;
-            return false;
+            if ((e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+                (e.ctrlKey && e.key === 'U') ||
+                e.key === 'F12' ||
+                (e.metaKey && e.altKey && e.key === 'I')) {
+                e.preventDefault();
+                showWarning();
+                return false;
+            }
         });
-        
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            e.returnValue = false;
-            return false;
-        });
-        
-        // إرسال بيانات المحاولة إلى السيرفر (اختياري)
-        try {
-            fetch('/log-attempt', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent,
-                    ip: '', // سيتم الحصول على الـ IP من السيرفر
-                    action: 'DevTools attempt'
-                })
-            });
-        } catch (e) {
-            console.error('Error logging attempt:', e);
-        }
     }
-
-    // منع النقر الأيمن وفحص العناصر
-    document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        showWarning();
-        return false;
-    });
-
-    // إخفاء الكود المصدري في حالة الفحص
-    Object.defineProperty(document, 'innerHTML', {
-        get: function() {
-            showWarning();
-            return '';
-        },
-        set: function(value) {
-            showWarning();
-            return '';
+    
+    // 2. اكتشاف تغيير حجم النافذة
+    if (settings.enableResizeDetection) {
+        let lastWidth = window.innerWidth;
+        let lastHeight = window.innerHeight;
+        
+        function checkWindowSize() {
+            const widthDiff = Math.abs(window.innerWidth - lastWidth);
+            const heightDiff = Math.abs(window.innerHeight - lastHeight);
+            
+            if ((widthDiff > threshold && widthDiff < 500) || 
+                (heightDiff > threshold && heightDiff < 500)) {
+                showWarning();
+            }
+            
+            lastWidth = window.innerWidth;
+            lastHeight = window.innerHeight;
         }
-    });
-
-    // إخفاء DOM في حالة الفحص
-    Object.defineProperty(document, 'childNodes', {
-        get: function() {
-            showWarning();
-            return [];
+        
+        setInterval(checkWindowSize, 500);
+    }
+    
+    // 3. اكتشاف فتح وحدة التحكم
+    if (settings.enableConsoleDetection) {
+        const consoleDetector = new Function('try { return this.console.log; } catch(e) { return false; }');
+        
+        function detectConsole() {
+            if (consoleDetector() === false) {
+                showWarning();
+            }
         }
-    });
-
-    // إخفاء النص المحدد (منع النسخ)
-    document.addEventListener('selectstart', function(e) {
-        e.preventDefault();
-        return false;
-    });
-
-    // إخفاء الكود في حالة استخدام debugger
-    function debuggerProtection() {
-        function doSomething() {
-            return true;
-        }
-        while (doSomething()) {
+        
+        setInterval(detectConsole, 1000);
+    }
+    
+    // 4. حماية من الـ debugger
+    if (settings.enableDebuggerProtection) {
+        function debuggerProtection() {
+            const start = Date.now();
             debugger;
-            doSomething();
+            if (Date.now() - start > 100) {
+                showWarning();
+            }
         }
+        
+        setInterval(debuggerProtection, 1000);
     }
-    setTimeout(debuggerProtection, 1000);
+    
+    // 5. منع فحص العناصر (لكن يسمح بالنقر الأيمن لعرض القائمة)
+    document.addEventListener('contextmenu', function(e) {
+        if (e.target.id !== 'devtools-warning-btn') {
+            showWarning();
+            e.preventDefault();
+            return false;
+        }
+    });
 })();
     </script>
     <div id="selfTestResultModal" class="modal" style="display: none;">
