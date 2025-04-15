@@ -2393,7 +2393,8 @@ h1, h2, h3, h4 {
                             </div>
                             <div class="exam-footer">
                                 <button class="btn btn-primary" id="prevSelfTestQuestionBtn" style="display: none;">السابق</button>
-                                <button class="btn btn-primary" id="nextSelfTestQuestionBtn">التالي</button>
+                                <button class="btn btn-primary" id="nextSelfTestQuestionBtn">التالــــي</button>
+
                                 <button class="btn btn-success" id="finishSelfTestBtn" style="display: none;">إنهاء الاختبار</button>
                             </div>
                         </div>
@@ -3678,6 +3679,7 @@ function startSelfTest(selfTest, selfTestId) {
     showPage(selfTestPage);
 }
 
+// تحميل السؤال الحالي
 function loadSelfTestQuestion(index) {
     const question = currentExam.questions[index];
     const container = document.getElementById('selfTestQuestion');
@@ -3718,9 +3720,18 @@ function loadSelfTestQuestion(index) {
     });
 
     // تحديث أزرار التنقل
+    document.getElementById('prevSelfTestQuestionBtn').style.display = index > 0 ? 'inline-block' : 'none';
     document.getElementById('nextSelfTestQuestionBtn').style.display = index < currentExam.questions.length - 1 ? 'inline-block' : 'none';
     document.getElementById('finishSelfTestBtn').style.display = index === currentExam.questions.length - 1 ? 'inline-block' : 'none';
 }
+
+// مستمع لزر "السابق"
+document.getElementById('prevSelfTestQuestionBtn').addEventListener('click', () => {
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        loadSelfTestQuestion(currentQuestionIndex);
+    }
+});
 function showFeedback(index) {
     const question = currentExam.questions[index];
     const selectedAnswer = userAnswers[index];
@@ -3784,6 +3795,8 @@ function showPage(page) {
     // عرض الصفحة المطلوبة
     page.style.display = 'block';
 }
+
+
 document.getElementById('addSelfTestQuestionBtn').addEventListener('click', () => {
     const container = document.getElementById('selfTestQuestionsContainer');
     const questionId = Date.now();
@@ -5092,35 +5105,36 @@ function showNoticeMessage(text) {
     'use strict';
     
     // إعدادات التطبيق
-    const settings = {
-        warningDuration: 10000, // مدة عرض التحذير بالميلي ثانية (10 ثواني)
+    const config = {
+        redirectUrl: '', // رابط التوجيه عند المحاولة (اختياري)
         enableConsoleDetection: true,
         enableResizeDetection: true,
         enableKeyboardShortcutsBlock: true,
-        enableDebuggerProtection: true,
-        warningTitle: "⚠️ تنبيه: محاولة غير مصرح بها",
-        warningMessage: "تم اكتشاف محاولة فتح أدوات المطور.<br>هذا الإجراء غير مسموح به في هذا الموقع.",
-        warningButtonText: "فهمت، سأغلق الأدوات"
+        enableRightClickBlock: true,
+        enableSelectBlock: true,
+        enableDebuggerProtection: true
     };
     
     // متغيرات التتبع
     let devToolsOpened = false;
-    let warningTimeout;
     const threshold = 160; // الحد الأدنى لاكتشاف فتح الأدوات
+    
+    // عناصر واجهة التحذير
+    let warningOverlay;
     
     // إنشاء واجهة التحذير
     function createWarningOverlay() {
-        const overlay = document.createElement('div');
-        overlay.id = 'devtools-warning-overlay';
-        overlay.style.cssText = `
+        warningOverlay = document.createElement('div');
+        warningOverlay.id = 'devtools-warning-overlay';
+        warningOverlay.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            background: #111;
             color: #fff;
-            z-index: 2147483647;
+            z-index: 999999999;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -5129,39 +5143,39 @@ function showNoticeMessage(text) {
             text-align: center;
             padding: 20px;
             box-sizing: border-box;
-            backdrop-filter: blur(5px);
         `;
         
-        overlay.innerHTML = `
-            <div style="max-width: 600px; padding: 30px; background: rgba(255, 0, 0, 0.1); border-radius: 10px; border: 1px solid rgba(255, 0, 0, 0.3);">
-                <h1 style="color: #ff4d4d; font-size: 2em; margin-bottom: 20px;">${settings.warningTitle}</h1>
-                <div style="font-size: 1.2em; line-height: 1.6; margin-bottom: 30px;">
-                    ${settings.warningMessage}
-                </div>
-                <button id="devtools-warning-btn" style="
-                    padding: 12px 24px;
-                    background: #ff4d4d;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    font-size: 1em;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                " onmouseover="this.style.background='#ff3333'" onmouseout="this.style.background='#ff4d4d'">
-                    ${settings.warningButtonText}
-                </button>
+        warningOverlay.innerHTML = `
+            <h1 style="color: #ff3e3e; font-size: 2.5em; margin-bottom: 20px;">⚠️ تم الكشف عن محاولة غير مصرح بها</h1>
+            <div style="max-width: 600px;">
+                <p style="font-size: 1.2em; line-height: 1.6;">
+                    لقد تم الكشف عن محاولة فتح أدوات المطور أو فحص الكود المصدري.<br>
+                    هذا الإجراء غير مسموح به في هذا الموقع.
+                </p>
+                <p style="font-size: 1.1em; margin-top: 20px; color: #aaa;">
+                    سيتم تسجيل هذه المحاولة. التكرار قد يؤدي إلى حظر دخولك.
+                </p>
             </div>
+            <button id="devtools-warning-btn" style="
+                margin-top: 30px;
+                padding: 12px 24px;
+                background: #ff3e3e;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-size: 1em;
+                cursor: pointer;
+            ">فهمت، سأغلق الأدوات</button>
         `;
         
-        document.body.appendChild(overlay);
+        document.body.appendChild(warningOverlay);
         
         // إضافة حدث للزر
         document.getElementById('devtools-warning-btn').addEventListener('click', function() {
-            closeWarning();
+            warningOverlay.style.display = 'none';
+            devToolsOpened = false;
+            location.reload();
         });
-        
-        // إغلاق التحذير تلقائياً بعد مدة محددة
-        warningTimeout = setTimeout(closeWarning, settings.warningDuration);
     }
     
     // عرض التحذير
@@ -5170,46 +5184,46 @@ function showNoticeMessage(text) {
         
         devToolsOpened = true;
         
-        // إيقاف أي مؤقت سابق
-        if (warningTimeout) clearTimeout(warningTimeout);
+        if (!warningOverlay) {
+            createWarningOverlay();
+        } else {
+            warningOverlay.style.display = 'flex';
+        }
         
-        // إزالة أي تحذير سابق
-        const existingOverlay = document.getElementById('devtools-warning-overlay');
-        if (existingOverlay) document.body.removeChild(existingOverlay);
-        
-        createWarningOverlay();
+        // إرسال بيانات المحاولة إلى السيرفر (اختياري)
         logAttempt();
-    }
-    
-    // إغلاق التحذير
-    function closeWarning() {
-        const overlay = document.getElementById('devtools-warning-overlay');
-        if (overlay) {
-            overlay.style.opacity = '0';
+        
+        // توجيه المستخدم إذا كان رابط التوجيه موجودًا
+        if (config.redirectUrl) {
             setTimeout(() => {
-                document.body.removeChild(overlay);
-                devToolsOpened = false;
-            }, 300);
+                window.location.href = config.redirectUrl;
+            }, 5000);
         }
     }
     
-    // تسجيل المحاولة
+    // تسجيل المحاولة (يمكن تخصيصها لإرسال البيانات للسيرفر)
     function logAttempt() {
         const data = {
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
             url: window.location.href,
-            userAgent: navigator.userAgent
+            viewport: {
+                width: window.innerWidth,
+                height: window.innerHeight
+            },
+            type: 'devtools_attempt'
         };
         
+        console.log('DevTools attempt detected:', data);
         // يمكنك هنا إضافة كود إرسال البيانات إلى السيرفر
-        console.warn('DevTools access attempt:', data);
     }
     
     // 1. منع اختصارات لوحة المفاتيح
-    if (settings.enableKeyboardShortcutsBlock) {
+    if (config.enableKeyboardShortcutsBlock) {
         document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-                (e.ctrlKey && e.key === 'U') ||
+            // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U, F12
+            if ((e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'i' || e.key === 'j' || e.key === 'c')) ||
+                (e.ctrlKey && e.key === 'u') ||
                 e.key === 'F12' ||
                 (e.metaKey && e.altKey && e.key === 'I')) {
                 e.preventDefault();
@@ -5220,16 +5234,15 @@ function showNoticeMessage(text) {
     }
     
     // 2. اكتشاف تغيير حجم النافذة
-    if (settings.enableResizeDetection) {
+    if (config.enableResizeDetection) {
         let lastWidth = window.innerWidth;
         let lastHeight = window.innerHeight;
         
         function checkWindowSize() {
-            const widthDiff = Math.abs(window.innerWidth - lastWidth);
-            const heightDiff = Math.abs(window.innerHeight - lastHeight);
+            const widthChanged = Math.abs(window.innerWidth - lastWidth) > threshold;
+            const heightChanged = Math.abs(window.innerHeight - lastHeight) > threshold;
             
-            if ((widthDiff > threshold && widthDiff < 500) || 
-                (heightDiff > threshold && heightDiff < 500)) {
+            if (widthChanged || heightChanged) {
                 showWarning();
             }
             
@@ -5241,11 +5254,16 @@ function showNoticeMessage(text) {
     }
     
     // 3. اكتشاف فتح وحدة التحكم
-    if (settings.enableConsoleDetection) {
-        const consoleDetector = new Function('try { return this.console.log; } catch(e) { return false; }');
+    if (config.enableConsoleDetection) {
+        let consoleOpened = false;
         
         function detectConsole() {
-            if (consoleDetector() === false) {
+            const start = Date.now();
+            console.log('Console detection');
+            console.clear();
+            
+            if (Date.now() - start > 100 && !consoleOpened) {
+                consoleOpened = true;
                 showWarning();
             }
         }
@@ -5253,27 +5271,77 @@ function showNoticeMessage(text) {
         setInterval(detectConsole, 1000);
     }
     
-    // 4. حماية من الـ debugger
-    if (settings.enableDebuggerProtection) {
+    // 4. منع النقر الأيمن وفحص العناصر
+    if (config.enableRightClickBlock) {
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            showWarning();
+            return false;
+        });
+    }
+    
+    // 5. منع تحديد النص
+    if (config.enableSelectBlock) {
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+    }
+    
+    // 6. حماية من الـ debugger
+    if (config.enableDebuggerProtection) {
         function debuggerProtection() {
-            const start = Date.now();
-            debugger;
-            if (Date.now() - start > 100) {
-                showWarning();
+            function detectDevTools() {
+                const element = new Image();
+                Object.defineProperty(element, 'id', {
+                    get: function() {
+                        showWarning();
+                        return '';
+                    }
+                });
+                console.log(element);
             }
+            
+            try {
+                detectDevTools();
+            } catch (e) {}
         }
         
         setInterval(debuggerProtection, 1000);
     }
     
-    // 5. منع فحص العناصر (لكن يسمح بالنقر الأيمن لعرض القائمة)
-    document.addEventListener('contextmenu', function(e) {
-        if (e.target.id !== 'devtools-warning-btn') {
-            showWarning();
-            e.preventDefault();
-            return false;
-        }
-    });
+    // 7. حماية DOM من الفحص
+    (function protectDOM() {
+        const handler = {
+            get: function(target, prop) {
+                if (prop === 'innerHTML' || prop === 'outerHTML' || prop === 'src' || prop === 'href') {
+                    showWarning();
+                    return '';
+                }
+                return target[prop];
+            },
+            set: function(target, prop, value) {
+                if (prop === 'innerHTML' || prop === 'outerHTML') {
+                    showWarning();
+                    return false;
+                }
+                target[prop] = value;
+                return true;
+            }
+        };
+        
+        window.Element.prototype.innerHTML = new Proxy(window.Element.prototype.innerHTML, handler);
+        window.Element.prototype.outerHTML = new Proxy(window.Element.prototype.outerHTML, handler);
+    })();
+    
+    // 8. منع فتح الأدوات على الجوال (عند تغيير الاتجاه)
+    if (window.orientation !== undefined) {
+        window.addEventListener('orientationchange', function() {
+            if (Math.abs(window.orientation) === 90) {
+                showWarning();
+            }
+        });
+    }
 })();
     </script>
     <div id="selfTestResultModal" class="modal" style="display: none;">
