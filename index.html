@@ -2837,36 +2837,29 @@ h1, h2, h3, h4 {
         // Initialize the app
         function initApp() {
             auth.onAuthStateChanged(async user => {
-                if (user) {
-                    // User is signed in
-                    currentUser = user;
-                    
-                    // Get user data from Firestore
-                    const userDoc = await db.collection('users').doc(user.uid).get();
-                    if (userDoc.exists) {
-                        currentUserData = userDoc.data();
-                        userRole = currentUserData.role || 'student';
-                    } else {
-                        // Create user data if not exists
-                        currentUserData = {
-                            name: user.displayName || user.email,
-                            email: user.email,
-                            role: 'student',
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        };
-                        await db.collection('users').doc(user.uid).set(currentUserData);
-                    }
-                    
-                    setupAuthenticatedUI();
-                    loadDashboard();
-                } else {
-                    // User is signed out
-                    currentUser = null;
-                    currentUserData = null;
-                    setupUnauthenticatedUI();
-                }
-                loadingScreen.style.display = 'none';
-            });
+    if (user) {
+        // User is signed in
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists && userDoc.data().disabled) {
+            showAccountDisabledModal(); // عرض رسالة تعطيل الحساب
+            auth.signOut(); // تسجيل الخروج
+            return;
+        }
+
+        currentUser = user;
+        currentUserData = userDoc.data();
+        userRole = currentUserData.role || 'student';
+
+        setupAuthenticatedUI();
+        loadDashboard();
+    } else {
+        // User is signed out
+        currentUser = null;
+        currentUserData = null;
+        setupUnauthenticatedUI();
+    }
+    loadingScreen.style.display = 'none';
+});
         }
         function deleteSelfTest(selfTestId) {
     db.collection('selfTests').doc(selfTestId).delete()
