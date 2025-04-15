@@ -684,7 +684,49 @@ h1, h2, h3, h4 {
         padding: 30px 15px;
     }
 }
+.toast-message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #14ee88; /* لون أخضر */
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    z-index: 1000;
+    animation: fadeIn 0.5s ease forwards;
+}
 
+.toast-message i {
+    font-size: 1.5rem;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
         .page-title {
             font-size: 1.5rem;
             margin-bottom: 20px;
@@ -1407,7 +1449,49 @@ h1, h2, h3, h4 {
             transition: all 0.2s ease;
             border: 1px solid #ddd;
         }
+        .toast-message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #14ee88; /* لون أخضر */
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    z-index: 1000;
+    animation: fadeIn 0.5s ease forwards;
+}
 
+.toast-message i {
+    font-size: 1.5rem;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
         .option-label:hover {
             border-color: var(--primary);
         }
@@ -2289,12 +2373,17 @@ h1, h2, h3, h4 {
                                     <label for="selfTestTitle" class="form-label">عنوان الاختبار</label>
                                     <input type="text" id="selfTestTitle" class="form-control" required>
                                 </div>
+                                <div class="form-group">
+                                    <label for="selfTestDescription" class="form-label">وصف الاختبار</label>
+                                    <textarea id="selfTestDescription" class="form-control" placeholder="أدخل وصفًا للاختبار"></textarea>
+                                </div>
                                 <div id="selfTestQuestionsContainer">
                                     <!-- سيتم إضافة الأسئلة هنا -->
                                 </div>
                                 <button type="button" class="btn btn-primary" id="addSelfTestQuestionBtn">
                                     <i class="fas fa-plus"></i> إضافة سؤال
                                 </button>
+
                                 <br><br>
                                 <div class="form-group">
                                     <button type="button" class="btn btn-primary" id="bulkUploadSelfTestBtn">
@@ -2378,6 +2467,20 @@ h1, h2, h3, h4 {
                                     <button id="cancelDeleteBtn" class="btn btn-outline">إلغاء</button>
                                 </div>
                             </div>
+                        </div>
+                        <div id="deleteSlideModal" class="modal" style="display: none;">
+                            <div class="modal-content">
+                                <h3 class="modal-title">تأكيد الحذف</h3>
+                                <p class="modal-message">هل أنت متأكد أنك تريد حذف هذه الشريحة؟</p>
+                                <div class="modal-actions">
+                                    <button id="confirmDeleteSlideBtn" class="btn btn-danger">حذف</button>
+                                    <button id="cancelDeleteSlideBtn" class="btn btn-outline">إلغاء</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="toastMessage" class="toast-message" style="display: none;">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="toastText">تم حذف الشريحة بنجاح!</span>
                         </div>
                         <!-- Create Slide -->
                         <div id="createSlidePage" style="display: none;">
@@ -3016,6 +3119,38 @@ function saveExam(e) {
         alert(`حدث خطأ أثناء حفظ الاختبار: ${error.message}`);
     });
 }
+
+function deleteSlide(slideId) {
+    db.collection('slides').doc(slideId).delete()
+        .then(() => {
+            showToast('تم حذف الشريحة بنجاح!');
+            loadSlides(); // إعادة تحميل قائمة الشرائح
+        })
+        .catch(error => {
+            showToast(`حدث خطأ أثناء حذف الشريحة: ${error.message}`, 'error');
+        });
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toastMessage');
+    const toastText = document.getElementById('toastText');
+
+    // تحديث النص واللون بناءً على النوع
+    toastText.textContent = message;
+    toast.style.backgroundColor = type === 'success' ? '#14ee88' : '#FC5C65';
+
+    // عرض الرسالة
+    toast.style.display = 'flex';
+
+    // إخفاء الرسالة بعد 3 ثوانٍ
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.5s ease forwards';
+        setTimeout(() => {
+            toast.style.display = 'none';
+            toast.style.animation = 'fadeIn 0.5s ease forwards';
+        }, 500);
+    }, 3000);
+}
 function loadAllExams() {
     const allExamsContainer = document.getElementById('allExams');
     allExamsContainer.innerHTML = '<p>جاري تحميل الاختبارات...</p>';
@@ -3405,7 +3540,6 @@ function loadSelfTests() {
             selfTestsGrid.innerHTML = `<p>حدث خطأ أثناء تحميل اختبارات "اختبر نفسك": ${error.message}</p>`;
         });
 }
-
 function createSelfTestCard(selfTest, selfTestId) {
     const card = document.createElement('div');
     card.className = 'self-test-card';
@@ -3416,26 +3550,29 @@ function createSelfTestCard(selfTest, selfTestId) {
 
     const body = document.createElement('div');
     body.className = 'self-test-card-body';
-    body.innerHTML = `<p>${selfTest.description || 'لا يوجد وصف للاختبار'}</p>`;
+    body.innerHTML = `
+        <p>${selfTest.description || 'لا يوجد وصف للاختبار'}</p>
+        <p><strong>عدد الأسئلة:</strong> ${selfTest.questions.length}</p>
+    `;
 
     const footer = document.createElement('div');
     footer.className = 'self-test-card-footer';
 
     const startTestBtn = document.createElement('button');
-startTestBtn.className = 'btn btn-primary';
-startTestBtn.textContent = 'بدء الاختبار';
-startTestBtn.style.marginRight = '10px'; // إضافة مسافة بين الأزرار
-startTestBtn.addEventListener('click', () => startSelfTest(selfTest, selfTestId));
+    startTestBtn.className = 'btn btn-primary';
+    startTestBtn.textContent = 'بدء الاختبار';
+    startTestBtn.style.marginRight = '10px'; // إضافة مسافة بين الأزرار
+    startTestBtn.addEventListener('click', () => startSelfTest(selfTest, selfTestId));
 
-footer.appendChild(startTestBtn);
+    footer.appendChild(startTestBtn);
 
-if (userRole === 'teacher') {
-    const deleteTestBtn = document.createElement('button');
-    deleteTestBtn.className = 'btn btn-danger';
-    deleteTestBtn.textContent = 'حذف';
-    deleteTestBtn.addEventListener('click', () => confirmDeleteSelfTest(selfTestId));
-    footer.appendChild(deleteTestBtn);
-}
+    if (userRole === 'teacher') {
+        const deleteTestBtn = document.createElement('button');
+        deleteTestBtn.className = 'btn btn-danger';
+        deleteTestBtn.textContent = 'حذف';
+        deleteTestBtn.addEventListener('click', () => confirmDeleteSelfTest(selfTestId));
+        footer.appendChild(deleteTestBtn);
+    }
 
     card.appendChild(header);
     card.appendChild(body);
@@ -3621,10 +3758,34 @@ function removeQuestion(questionId) {
         questionDiv.remove();
     }
 }
+function confirmDeleteSlide(slideId) {
+    const modal = document.getElementById('deleteSlideModal');
+    modal.style.display = 'flex';
+
+    const confirmDeleteBtn = document.getElementById('confirmDeleteSlideBtn');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteSlideBtn');
+
+    // إزالة أي مستمعات سابقة لتجنب التكرار
+    confirmDeleteBtn.replaceWith(confirmDeleteBtn.cloneNode(true));
+    cancelDeleteBtn.replaceWith(cancelDeleteBtn.cloneNode(true));
+
+    // إضافة مستمع جديد
+    document.getElementById('confirmDeleteSlideBtn').addEventListener('click', () => {
+        modal.style.display = 'none';
+        deleteSlide(slideId);
+    });
+
+    document.getElementById('cancelDeleteSlideBtn').addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+}
+
+
 document.getElementById('selfTestForm').addEventListener('submit', (e) => {
     e.preventDefault();
 
     const title = document.getElementById('selfTestTitle').value;
+    const description = document.getElementById('selfTestDescription').value; // الحصول على الوصف
     const questions = [];
     const questionContainers = document.querySelectorAll('.question-container');
 
@@ -3646,6 +3807,7 @@ document.getElementById('selfTestForm').addEventListener('submit', (e) => {
 
     db.collection('selfTests').add({
         title: title,
+        description: description, // إضافة الوصف
         questions: questions,
         createdBy: currentUserData?.name || currentUser.email,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -4157,7 +4319,7 @@ function createSlideCard(slide, slideId) {
 
     const header = document.createElement('div');
     header.className = 'slide-card-header';
-    header.innerHTML = `<i class=""></i> ${slide.title}`;
+    header.innerHTML = `<i class="fas fa-chalkboard-teacher"></i> ${slide.title}`;
 
     const body = document.createElement('div');
     body.className = 'slide-card-body';
@@ -4167,6 +4329,15 @@ function createSlideCard(slide, slideId) {
     footer.className = 'slide-card-footer';
     footer.innerHTML = `<span><i class="fas fa-user"></i> ${slide.createdBy || 'مجهول'}</span>
                         <span><i class="fas fa-calendar-alt"></i> ${new Date(slide.createdAt?.toDate()).toLocaleDateString()}</span>`;
+
+    // إضافة زر الحذف إذا كان المستخدم معلمًا
+    if (userRole === 'teacher') {
+        const deleteSlideBtn = document.createElement('button');
+        deleteSlideBtn.className = 'btn btn-danger';
+        deleteSlideBtn.textContent = 'حذف';
+        deleteSlideBtn.addEventListener('click', () => confirmDeleteSlide(slideId));
+        footer.appendChild(deleteSlideBtn);
+    }
 
     card.appendChild(header);
     card.appendChild(body);
@@ -4944,6 +5115,10 @@ function showNoticeMessage(text) {
             </div>
             <button class="btn btn-primary" id="closeSelfTestResultModal">إغلاق</button>
         </div>
+    </div>
+    <div id="toastMessage" class="toast-message" style="display: none;">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastText">تم حذف الاختبار بنجاح!</span>
     </div>
 </body>
 </html>
