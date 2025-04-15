@@ -1448,7 +1448,37 @@ h1, h2, h3, h4 {
 .footer .social-links li {
     display: inline-block;
 }
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
 
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: rgb(0, 187, 255);
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 150px;
+    padding: 10px 0;
+}
+
+.dropdown-item {
+    padding: 10px 15px;
+    background-color: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #00c3ff;
+}
 .footer .social-links a {
     color: white;
     font-size: 1.5rem;
@@ -2268,7 +2298,15 @@ h1, h2, h3, h4 {
 
                 <div class="user-menu" id="userMenu" style="display: none;">
                     <span id="userName"></span>
-                    <button class="btn btn-danger" id="logoutBtn">تسجيل الخروج</button>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" id="userMenuDropdown" onclick="toggleDropdown()">☰</button>
+                        <div class="dropdown-menu" id="dropdownMenu" style="display: none;">
+                            <button class="dropdown-item" id="reloadHomeBtn">الرئيسية</button>
+
+                            <button class="dropdown-item" id="logoutBtn">تسجيل الخروج</button>
+
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3107,6 +3145,9 @@ menuManageSelfTest.addEventListener('click', (e) => {
         aboutSection.style.display = 'none'; // إخفاء قسم التعريف
     }
 }
+document.getElementById('reloadHomeBtn').addEventListener('click', () => {
+    location.reload(); // إعادة تحميل الصفحة
+});
 function showPage(page) {
     const pages = [dashboardPage, examsPage, createExamPage, createSlidePage, takeExamPage, resultsPage, gradesPage, studentsPage, profilePage];
     const aboutSection = document.getElementById('aboutSection');
@@ -3485,6 +3526,21 @@ function confirmDeleteSelfTest(selfTestId) {
 }
 
 
+
+
+function toggleDropdown() {
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+}
+
+// إغلاق القائمة عند النقر خارجها
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('userMenuDropdown');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    if (!dropdown.contains(e.target)) {
+        dropdownMenu.style.display = 'none';
+    }
+});
 
 document.getElementById('submitExamBtn').addEventListener('click', () => {
     const modal = document.getElementById('confirmModal');
