@@ -3653,8 +3653,7 @@ document.getElementById('selfTestForm').addEventListener('submit', (e) => {
     })
     .then(() => {
         alert('تم حفظ الاختبار بنجاح!');
-        document.getElementById('selfTestForm').reset();
-        document.getElementById('selfTestQuestionsContainer').innerHTML = '';
+        location.reload(); // إعادة تحميل الصفحة بعد الحفظ
     })
     .catch(error => {
         alert(`حدث خطأ أثناء حفظ الاختبار: ${error.message}`);
