@@ -1358,6 +1358,68 @@ h1, h2, h3, h4 {
     justify-content: center;
     gap: 15px;
 }
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #ff4444;
+    margin-bottom: 15px;
+}
+
+.modal-message {
+    font-size: 1rem;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.modal-content .btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.modal-content .btn:hover {
+    background-color: #0056b3;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
 .self-test-card-footer button {
     margin-left: 10px; /* مسافة بين الأزرار */
 }
@@ -2911,7 +2973,31 @@ document.getElementById('bulkUploadSelfTestInput').addEventListener('change', (e
         alert('يرجى رفع ملف بصيغة CSV أو Excel فقط.');
     }
 });
+function loadAllExams() {
+    const allExamsContainer = document.getElementById('allExams');
+    allExamsContainer.innerHTML = '<p>جاري تحميل الاختبارات...</p>';
 
+    db.collection('exams').orderBy('createdAt', 'desc').get()
+        .then(snapshot => {
+            if (snapshot.empty) {
+                allExamsContainer.innerHTML = '<p>لا توجد اختبارات متاحة حالياً</p>';
+                return;
+            }
+
+            allExamsContainer.innerHTML = '';
+            snapshot.forEach(doc => {
+                const exam = doc.data();
+
+                // التحقق مما إذا كان الطالب الحالي مسموحًا له برؤية الاختبار
+                if (!exam.allowedStudents || exam.allowedStudents.length === 0 || exam.allowedStudents.includes(currentUser.uid)) {
+                    allExamsContainer.appendChild(createExamCard(exam, doc.id));
+                }
+            });
+        })
+        .catch(error => {
+            allExamsContainer.innerHTML = `<p>حدث خطأ أثناء تحميل الاختبارات: ${error.message}</p>`;
+        });
+}
 function processSelfTestQuestions(data) {
     const container = document.getElementById('selfTestQuestionsContainer');
     container.innerHTML = ''; // مسح الأسئلة الحالية
@@ -3069,26 +3155,44 @@ menuCreateExam.addEventListener('click', (e) => {
     showPage(createExamPage);
     loadStudentsForExam(); // تحميل قائمة الطلاب
 });
-
 function saveExam(e) {
     e.preventDefault();
 
-    const title = document.getElementById('examTitle').value;
-    const description = document.getElementById('examDescription').value;
+    const title = document.getElementById('examTitle').value.trim();
+    const description = document.getElementById('examDescription').value.trim();
     const duration = parseInt(document.getElementById('examDuration').value);
     const totalMarks = parseInt(document.getElementById('examTotalMarks').value);
     const allowedStudents = Array.from(document.getElementById('allowedStudents').selectedOptions).map(option => option.value);
+
+    // التحقق من الحقول الأساسية
+    if (!title || !description || isNaN(duration) || isNaN(totalMarks)) {
+        alert('يرجى ملء جميع الحقول المطلوبة.');
+        return;
+    }
+
+    // التحقق من تحديد الطلاب المسموح لهم
+    if (allowedStudents.length === 0) {
+        const confirmAllStudents = confirm('لم يتم تحديد أي طالب. هل تريد جعل الاختبار متاحًا لجميع الطلاب؟');
+        if (!confirmAllStudents) {
+            return;
+        }
+    }
 
     // جمع الأسئلة
     const questions = [];
     const questionContainers = document.querySelectorAll('.question-container');
     questionContainers.forEach(container => {
-        const questionText = container.querySelector('.question-text').value;
+        const questionText = container.querySelector('.question-text').value.trim();
         const optionInputs = container.querySelectorAll('.option-text');
-        const correctAnswer = parseInt(container.querySelector('input[name^="correct-"]:checked').value);
+        const correctAnswer = parseInt(container.querySelector('input[name^="correct-"]:checked')?.value);
+
+        if (!questionText || isNaN(correctAnswer)) {
+            alert('يرجى ملء جميع الحقول الخاصة بالأسئلة.');
+            return;
+        }
 
         const options = Array.from(optionInputs).map(input => ({
-            text: input.value
+            text: input.value.trim()
         }));
 
         questions.push({
@@ -3130,7 +3234,15 @@ function deleteSlide(slideId) {
             showToast(`حدث خطأ أثناء حذف الشريحة: ${error.message}`, 'error');
         });
 }
+function showAccountDisabledModal() {
+    const modal = document.getElementById('accountDisabledModal');
+    modal.style.display = 'flex';
+}
 
+function closeAccountDisabledModal() {
+    const modal = document.getElementById('accountDisabledModal');
+    modal.style.display = 'none';
+}
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toastMessage');
     const toastText = document.getElementById('toastText');
@@ -3151,31 +3263,7 @@ function showToast(message, type = 'success') {
         }, 500);
     }, 3000);
 }
-function loadAllExams() {
-    const allExamsContainer = document.getElementById('allExams');
-    allExamsContainer.innerHTML = '<p>جاري تحميل الاختبارات...</p>';
 
-    db.collection('exams').orderBy('createdAt', 'desc').get()
-        .then(snapshot => {
-            if (snapshot.empty) {
-                allExamsContainer.innerHTML = '<p>لا توجد اختبارات متاحة حالياً</p>';
-                return;
-            }
-
-            allExamsContainer.innerHTML = '';
-            snapshot.forEach(doc => {
-                const exam = doc.data();
-
-                // التحقق مما إذا كان الطالب الحالي مسموحًا له برؤية الاختبار
-                if (!exam.allowedStudents || exam.allowedStudents.length === 0 || exam.allowedStudents.includes(currentUser.uid)) {
-                    allExamsContainer.appendChild(createExamCard(exam, doc.id));
-                }
-            });
-        })
-        .catch(error => {
-            allExamsContainer.innerHTML = `<p>حدث خطأ أثناء تحميل الاختبارات: ${error.message}</p>`;
-        });
-}
 
 function loadRecentExams() {
     const recentExamsContainer = document.getElementById('recentExams');
@@ -3314,28 +3402,7 @@ document.getElementById('finishSelfTestBtn').addEventListener('click', finishSel
                 });
         }
 
-        // Load all exams
-        function loadAllExams() {
-            const allExamsContainer = document.getElementById('allExams');
-            allExamsContainer.innerHTML = '<p>جاري تحميل الاختبارات...</p>';
-            
-            db.collection('exams').orderBy('createdAt', 'desc').get()
-                .then(snapshot => {
-                    if (snapshot.empty) {
-                        allExamsContainer.innerHTML = '<p>لا توجد اختبارات متاحة حالياً</p>';
-                        return;
-                    }
-                    
-                    allExamsContainer.innerHTML = '';
-                    snapshot.forEach(doc => {
-                        const exam = doc.data();
-                        allExamsContainer.appendChild(createExamCard(exam, doc.id));
-                    });
-                })
-                .catch(error => {
-                    allExamsContainer.innerHTML = `<p>حدث خطأ أثناء تحميل الاختبارات: ${error.message}</p>`;
-                });
-        }
+       
         document.getElementById('bulkUploadBtn').addEventListener('click', () => {
     document.getElementById('bulkUploadInput').click();
 });
@@ -4348,6 +4415,7 @@ function createSlideCard(slide, slideId) {
 
 // ...existing code...
         // Load students list (for teachers)
+        // 
         function loadStudents() {
     const tableBody = document.getElementById('studentsTable');
     tableBody.innerHTML = '<tr><td colspan="5">جاري تحميل قائمة الطلاب...</td></tr>';
@@ -4402,6 +4470,9 @@ function createSlideCard(slide, slideId) {
                                 <button class="btn btn-primary btn-sm" onclick="viewStudentGrades('${student.id}')">
                                     <i class="fas fa-eye"></i> عرض الدرجات
                                 </button>
+                                <button class="btn btn-danger btn-sm" onclick="toggleStudentStatus('${student.id}', ${student.disabled || false})">
+                                    ${student.disabled ? 'تفعيل' : 'تعطيل'}
+                                </button>
                             </td>
                         </tr>
                     `;
@@ -4411,6 +4482,27 @@ function createSlideCard(slide, slideId) {
         .catch(error => {
             tableBody.innerHTML = `<tr><td colspan="5">حدث خطأ: ${error.message}</td></tr>`;
         });
+}
+
+function toggleStudentStatus(studentId, isDisabled) {
+    const confirmationMessage = isDisabled
+        ? 'هل تريد تفعيل حساب هذا الطالب؟'
+        : 'هل تريد تعطيل حساب هذا الطالب؟';
+
+    if (!confirm(confirmationMessage)) {
+        return;
+    }
+
+    db.collection('users').doc(studentId).update({
+        disabled: !isDisabled
+    })
+    .then(() => {
+        alert(isDisabled ? 'تم تفعيل حساب الطالب بنجاح!' : 'تم تعطيل حساب الطالب بنجاح!');
+        loadStudents(); // إعادة تحميل قائمة الطلاب
+    })
+    .catch(error => {
+        alert(`حدث خطأ أثناء تحديث حالة الطالب: ${error.message}`);
+    });
 }
 window.viewStudentGrades = function(studentId) {
     const modal = document.getElementById('gradesModal');
@@ -4656,76 +4748,6 @@ function loadStudentsProgress() {
             }
         }
 
-        // Save exam
-        function saveExam(e) {
-            e.preventDefault();
-            
-            const title = document.getElementById('examTitle').value;
-            const description = document.getElementById('examDescription').value;
-            const duration = parseInt(document.getElementById('examDuration').value);
-            const totalMarks = parseInt(document.getElementById('examTotalMarks').value);
-            
-            // Collect questions
-            const questions = [];
-            const questionContainers = document.querySelectorAll('.question-container');
-            
-            if (questionContainers.length === 0) {
-                alert('يجب إضافة سؤال واحد على الأقل');
-                return;
-            }
-            
-            questionContainers.forEach(container => {
-                const questionText = container.querySelector('.question-text').value;
-                const optionInputs = container.querySelectorAll('.option-text');
-                const correctAnswer = parseInt(container.querySelector('input[name^="correct-"]:checked').value);
-                
-                const options = Array.from(optionInputs).map(input => ({
-                    text: input.value
-                }));
-                
-                questions.push({
-                    text: questionText,
-                    options: options,
-                    correctAnswer: correctAnswer
-                });
-            });
-            
-            // Save to Firestore
-            db.collection('exams').add({
-                title: title,
-                description: description,
-                duration: duration,
-                totalMarks: totalMarks,
-                questions: questions,
-                createdBy: currentUserData?.name || currentUser.email,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                userId: currentUser.uid
-            })
-            .then(() => {
-                // Show success message
-                const successAlert = document.getElementById('examCreationSuccess');
-                successAlert.style.display = 'flex';
-                
-                // Reset form
-                document.getElementById('examForm').reset();
-                document.getElementById('questionsContainer').innerHTML = '';
-                
-                // Update teacher stats
-                if (userRole === 'teacher') {
-                    db.collection('users').doc(currentUser.uid).update({
-                        examsCreated: firebase.firestore.FieldValue.increment(1)
-                    });
-                }
-                
-                // Hide success message after 3 seconds
-                setTimeout(() => {
-                    successAlert.style.display = 'none';
-                }, 3000);
-            })
-            .catch(error => {
-                alert(`حدث خطأ أثناء حفظ الاختبار: ${error.message}`);
-            });
-        }
 
         // Load user profile
         function loadProfile() {
@@ -4764,15 +4786,21 @@ function loadStudentsProgress() {
     const errorText = document.getElementById('loginErrorText');
 
     auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-            // تسجيل الدخول بنجاح
+    .then(userCredential => {
+        const userId = userCredential.user.uid;
+        return db.collection('users').doc(userId).get();
+    })
+    .then(doc => {
+        if (doc.exists && doc.data().disabled) {
+            alert('تم تعطيل حسابك. يرجى التواصل مع الإدارة.');
+            auth.signOut();
+        } else {
             location.reload(); // إعادة تحميل الصفحة
-        })
-        .catch(error => {
-            // عرض رسالة الخطأ
-            errorText.textContent = error.message;
-            errorElement.style.display = 'flex';
-        });
+        }
+    })
+    .catch(error => {
+        alert(`حدث خطأ أثناء تسجيل الدخول: ${error.message}`);
+    });
 });
         // Register form
         document.getElementById('registerFormFields').addEventListener('submit', (e) => {
@@ -5049,7 +5077,7 @@ function showBlockedOverlay() {
     `;
     document.head.appendChild(style);
 }
-
+showAccountDisabledModal();
 // منع الزر الأيمن
 document.addEventListener('contextmenu', function (e) {
     e.preventDefault();
@@ -5119,6 +5147,13 @@ function showNoticeMessage(text) {
     <div id="toastMessage" class="toast-message" style="display: none;">
         <i class="fas fa-check-circle"></i>
         <span id="toastText">تم حذف الاختبار بنجاح!</span>
+    </div>
+    <div id="accountDisabledModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2 class="modal-title">🚫 حساب معطل</h2>
+            <p class="modal-message">عذرًا، تم تعطيل حسابك. يرجى التواصل مع الإدارة للحصول على المزيد من التفاصيل.</p>
+            <button class="btn btn-primary" onclick="closeAccountDisabledModal()">إغلاق</button>
+        </div>
     </div>
 </body>
 </html>
