@@ -5102,60 +5102,30 @@ function loadStudentsProgress() {
 });
         // Initialize the app
         initApp();// 
-       
-// منع الزر الأيمن
-document.addEventListener('contextmenu', function (e) {
-    e.preventDefault();
-    showNoticeMessage("❌ استخدام الزر الأيمن غير مسموح");
-});
 
-// دالة عرض رسالة منسدلة بسيطة (مثل toast / notice)
-function showNoticeMessage(text) {
-    // إذا كانت هناك رسالة ظاهرة بالفعل، لا تكررها
-    if (document.getElementById('notice-message')) return;
-
-    const notice = document.createElement('div');
-    notice.id = 'notice-message';
-    notice.textContent = text;
-
-    Object.assign(notice.style, {
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        background: '#ff4444',
-        color: '#fff',
-        padding: '10px 20px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-        fontFamily: 'Cairo, sans-serif',
-        fontSize: '1rem',
-        zIndex: 9999,
-        opacity: 0,
-        animation: 'fadeSlide 0.5s ease forwards'
-    });
-
-    document.body.appendChild(notice);
-
-    // إزالة الرسالة بعد 3 ثوانٍ
-    setTimeout(() => {
-        notice.style.animation = 'fadeOut 0.5s ease forwards';
-        setTimeout(() => notice.remove(), 500);
-    }, 3000);
-
-    // إضافة CSS للأنيميشن
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes fadeSlide {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeOut {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(-20px); }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
+    </script>
+    <div id="selfTestResultModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2 class="modal-title">🎉 تهانينا!</h2>
+            <p class="modal-message">لقد أكملت الاختبار بنجاح!</p>
+            <div class="result-details">
+                <p><strong>نتيجتك:</strong> <span id="selfTestResultScore">0%</span></p>
+                <p><strong>عدد الإجابات الصحيحة:</strong> <span id="selfTestCorrectAnswers">0</span></p>
+                <p><strong>عدد الإجابات الخاطئة:</strong> <span id="selfTestWrongAnswers">0</span></p>
+            </div>
+            <button class="btn btn-primary" id="closeSelfTestResultModal">إغلاق</button>
+        </div>
+    </div>
+    <div id="toastMessage" class="toast-message" style="display: none;">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastText">تم حذف الاختبار بنجاح!</span>
+    </div>
+    <div id="accountDisabledModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2 class="modal-title">🚫 حساب معطل</h2>
+            <p class="modal-message">عذرًا، تم تعطيل حسابك. يرجى التواصل مع الإدارة للحصول على المزيد من التفاصيل.</p>
+            <button class="btn btn-primary" onclick="closeAccountDisabledModal()">إغلاق</button>
+        </div>
+    </div>
 </body>
 </html>
