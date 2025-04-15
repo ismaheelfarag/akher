@@ -4585,23 +4585,24 @@ function loadStudentsProgress() {
         
         // Login form
         document.getElementById('loginFormFields').addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            const errorElement = document.getElementById('loginError');
-            const errorText = document.getElementById('loginErrorText');
-            
-            auth.signInWithEmailAndPassword(email, password)
-                .then(() => {
-                    // Success - handled by auth state listener
-                })
-                .catch(error => {
-                    errorText.textContent = error.message;
-                    errorElement.style.display = 'flex';
-                });
+    e.preventDefault();
+
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const errorElement = document.getElementById('loginError');
+    const errorText = document.getElementById('loginErrorText');
+
+    auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+            // تسجيل الدخول بنجاح
+            location.reload(); // إعادة تحميل الصفحة
+        })
+        .catch(error => {
+            // عرض رسالة الخطأ
+            errorText.textContent = error.message;
+            errorElement.style.display = 'flex';
         });
-        
+});
         // Register form
         document.getElementById('registerFormFields').addEventListener('submit', (e) => {
             e.preventDefault();
