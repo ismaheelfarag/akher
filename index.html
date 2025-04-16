@@ -5114,52 +5114,113 @@ function loadStudentsProgress() {
 });
         // Initialize the app
         initApp();// 
-       (function () {
-  // ⛔ منع اختصارات أدوات المطور
-  document.addEventListener('keydown', function (e) {
-    if (
-      e.key === 'F12' ||
-      (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
-      (e.ctrlKey && e.key === 'U')
-    ) {
-      e.preventDefault();
-      alert("🚫 ممنوع الوصول إلى أدوات المطور!");
+ (function () {
+  let warningShown = false;
+
+  function injectStyles() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .devtools-warning {
+        position: fixed;
+        top: -100%;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background: linear-gradient(to bottom right, #d10000, #3b0000);
+        color: white;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px;
+        box-sizing: border-box;
+        z-index: 999999;
+        transition: top 0.6s ease;
+      }
+      .devtools-warning.show {
+        top: 0;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function createBanner() {
+    const banner = document.createElement('div');
+    banner.className = 'devtools-warning';
+    banner.id = 'devtools-warning';
+    banner.textContent = '🚨 تم كشف أدوات المطور! سيتم إغلاق الصفحة لحمايتك.';
+    document.body.appendChild(banner);
+  }
+
+  function showBannerAndExit() {
+    if (warningShown) return;
+    warningShown = true;
+    const banner = document.getElementById('devtools-warning');
+    if (banner) {
+      banner.classList.add('show');
+      setTimeout(() => {
+        window.location.href = 'about:blank';
+      }, 2500);
     }
-  });
+  }
 
-  // ⛔ منع كليك يمين (زر الفأرة الأيمن)
-  document.addEventListener('contextmenu', function (e) {
-    e.preventDefault();
-    alert("🚫 ممنوع استخدام زر الفأرة الأيمن!");
-  });
+  function detectDevTools() {
+    const before = performance.now();
+    debugger;
+    const after = performance.now();
+    if (after - before > 100) {
+      showBannerAndExit();
+    }
 
-  // 🕵️‍♂️ كشف فتح أدوات المطور
-  let checkDevTools = function () {
-    const element = new Image();
-    Object.defineProperty(element, 'id', {
+    const el = new Image();
+    Object.defineProperty(el, 'id', {
       get: function () {
-        // تم فتح الأدوات (مثلاً فحص العنصر)
-        alert("🚨 تم كشف أدوات المطور!");
-        window.location.href = "about:blank"; // تحويل فوري
+        showBannerAndExit();
       }
     });
-    console.log(element); // يخلي المتصفح يستدعي getter ويكشف الأداة
-  };
+    console.log(el);
+  }
 
-  // 🔁 تحقق دوري
-  setInterval(() => {
-    const start = performance.now();
-    debugger;
-    const end = performance.now();
-    if (end - start > 100) {
-      alert("🚨 أدوات المطور مفعّلة! سيتم الخروج.");
-      window.location.href = "about:blank";
+  function detectResize() {
+    const threshold = window.outerHeight - window.innerHeight > 160;
+    if (threshold) {
+      showBannerAndExit();
     }
-    checkDevTools();
-  }, 1000);
+  }
 
+  function preventShortcuts() {
+    document.addEventListener('keydown', function (e) {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
+        (e.ctrlKey && e.key === 'U')
+      ) {
+        e.preventDefault();
+        showBannerAndExit();
+      }
+    });
+
+    document.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      showBannerAndExit();
+    });
+  }
+
+  function startProtection() {
+    injectStyles();
+    createBanner();
+    preventShortcuts();
+    setInterval(() => {
+      detectDevTools();
+      detectResize();
+    }, 1000);
+  }
+
+  window.addEventListener('DOMContentLoaded', startProtection);
 })();
- 
+
     </script>
     <div id="selfTestResultModal" class="modal" style="display: none;">
         <div class="modal-content">
