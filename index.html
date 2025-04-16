@@ -85,10 +85,7 @@ header, footer {
     font-size: 1.2rem;
     font-weight: bold;
 }
-.btn.btn-primary.dropdown-toggle { 
-    color:#008dc5;
-    background-color: #ffffff; /* Added background color */
-}
+
 .exam-card-body {
     padding: 20px;
     color: #333; /* لون النص */
@@ -352,7 +349,11 @@ h1, h2, h3, h4 {
     font-weight: 600;
     color: #2C3E50;
 }
- 
+.btn.btn-primary.dropdown-toggle { 
+    color:#008dc5;
+    background-color: #ffffff; /* Added background color */
+}
+    
         /* Header */
         header {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -1460,8 +1461,8 @@ h1, h2, h3, h4 {
     position: absolute;
     top: 100%;
     left: 0;
-    background-color: rgb(0, 187, 255);
-    border: 1px solid #ddd;
+    background-color: #0a70ff;
+    border: 1px solid #0a70ff;
     border-radius: 5px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     z-index: 1000;
@@ -1480,10 +1481,10 @@ h1, h2, h3, h4 {
 }
 
 .dropdown-item:hover {
-    background-color: #00c3ff;
+    background-color: #0a70ff;
 }
 .footer .social-links a {
-    color: white;
+    color: rgb(0, 170, 255);
     font-size: 1.5rem;
     transition: color 0.3s ease;
 }
@@ -3216,12 +3217,21 @@ function loadStudentsForExam() {
 }
 menuCreateExam.addEventListener('click', (e) => {
     e.preventDefault();
+    if (userRole !== 'teacher') {
+        alert('عذرًا، فقط المعلم يمكنه إنشاء الاختبارات.');
+        return;
+    }
     setActiveMenuItem(menuCreateExam);
     showPage(createExamPage);
-    loadStudentsForExam(); // تحميل قائمة الطلاب
 });
 function saveExam(e) {
     e.preventDefault();
+
+    // التحقق من دور المستخدم
+    if (userRole !== 'teacher') {
+        alert('عذرًا، فقط المعلم يمكنه حفظ الاختبارات.');
+        return;
+    }
 
     const title = document.getElementById('examTitle').value.trim();
     const description = document.getElementById('examDescription').value.trim();
@@ -3288,7 +3298,6 @@ function saveExam(e) {
         alert(`حدث خطأ أثناء حفظ الاختبار: ${error.message}`);
     });
 }
-
 function deleteSlide(slideId) {
     db.collection('slides').doc(slideId).delete()
         .then(() => {
