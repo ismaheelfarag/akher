@@ -5105,6 +5105,28 @@ function loadStudentsProgress() {
 });
         // Initialize the app
         initApp();// 
+// 🔐 منع فتح أدوات المطور
+document.addEventListener('keydown', function (e) {
+  if (
+    e.key === 'F12' ||
+    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+    (e.ctrlKey && e.key === 'U')
+  ) {
+    e.preventDefault();
+    alert("🚫 ممنوع فتح أدوات المطور!");
+  }
+});
+
+// 🔍 كشف فتح أدوات المطور باستخدام الفرق الزمني في debugger
+setInterval(() => {
+  const start = performance.now();
+  debugger;
+  const end = performance.now();
+  if (end - start > 100) {
+    alert("🚨 تم كشف أدوات المطور! سيتم إغلاق الصفحة.");
+    window.location.href = "about:blank"; // أو أي صفحة ثانية
+  }
+}, 1000);
 
     </script>
     <div id="selfTestResultModal" class="modal" style="display: none;">
