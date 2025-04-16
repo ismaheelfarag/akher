@@ -5114,29 +5114,52 @@ function loadStudentsProgress() {
 });
         // Initialize the app
         initApp();// 
-// 🔐 منع فتح أدوات المطور
-document.addEventListener('keydown', function (e) {
-  if (
-    e.key === 'F12' ||
-    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
-    (e.ctrlKey && e.key === 'U')
-  ) {
+       (function () {
+  // ⛔ منع اختصارات أدوات المطور
+  document.addEventListener('keydown', function (e) {
+    if (
+      e.key === 'F12' ||
+      (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
+      (e.ctrlKey && e.key === 'U')
+    ) {
+      e.preventDefault();
+      alert("🚫 ممنوع الوصول إلى أدوات المطور!");
+    }
+  });
+
+  // ⛔ منع كليك يمين (زر الفأرة الأيمن)
+  document.addEventListener('contextmenu', function (e) {
     e.preventDefault();
-    alert("🚫 ممنوع فتح أدوات المطور!");
-  }
-});
+    alert("🚫 ممنوع استخدام زر الفأرة الأيمن!");
+  });
 
-// 🔍 كشف فتح أدوات المطور باستخدام الفرق الزمني في debugger
-setInterval(() => {
-  const start = performance.now();
-  debugger;
-  const end = performance.now();
-  if (end - start > 100) {
-    alert("🚨 تم كشف أدوات المطور! سيتم إغلاق الصفحة.");
-    window.location.href = "about:blank"; // أو أي صفحة ثانية
-  }
-}, 1000);
+  // 🕵️‍♂️ كشف فتح أدوات المطور
+  let checkDevTools = function () {
+    const element = new Image();
+    Object.defineProperty(element, 'id', {
+      get: function () {
+        // تم فتح الأدوات (مثلاً فحص العنصر)
+        alert("🚨 تم كشف أدوات المطور!");
+        window.location.href = "about:blank"; // تحويل فوري
+      }
+    });
+    console.log(element); // يخلي المتصفح يستدعي getter ويكشف الأداة
+  };
 
+  // 🔁 تحقق دوري
+  setInterval(() => {
+    const start = performance.now();
+    debugger;
+    const end = performance.now();
+    if (end - start > 100) {
+      alert("🚨 أدوات المطور مفعّلة! سيتم الخروج.");
+      window.location.href = "about:blank";
+    }
+    checkDevTools();
+  }, 1000);
+
+})();
+ 
     </script>
     <div id="selfTestResultModal" class="modal" style="display: none;">
         <div class="modal-content">
