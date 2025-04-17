@@ -2429,7 +2429,13 @@ h1, h2, h3, h4 {
         ليس لديك حساب؟ <a href="#" id="showRegister">سجل الآن</a>
     </div>
 </div>
-
+<div id="accountDisabledModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h2 class="modal-title">🚫 حساب معطل</h2>
+        <p class="modal-message">عذرًا، تم تعطيل حسابك. يرجى التواصل مع الإدارة للحصول على المزيد من التفاصيل.</p>
+        <button class="btn btn-primary" onclick="closeAccountDisabledModal()">إغلاق</button>
+    </div>
+</div>
 
                 <!-- Register Form -->
                 <div id="registerForm" class="auth-container" style="display: none;">
@@ -2928,12 +2934,6 @@ const _0x4e41c0=_0x4b94;(function(_0x126281,_0x498ce0){const _0x2813c6=_0x4b94,_
     <i class="fas fa-check-circle"></i>
     <span id="toastText">تم حذف الاختبار بنجاح!</span>
 </div>
-<div id="accountDisabledModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <h2 class="modal-title">🚫 حساب معطل</h2>
-        <p class="modal-message">عذرًا، تم تعطيل حسابك. يرجى التواصل مع الإدارة للحصول على المزيد من التفاصيل.</p>
-        <button class="btn btn-primary" onclick="closeAccountDisabledModal()">إغلاق</button>
-    </div>
-</div>
+
 </body>
 </html>
